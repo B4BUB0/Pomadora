@@ -4,10 +4,10 @@ export default function Layout({ children }) {
   return (
     <div>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Ribeye&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Aubrey&display=swap');
         
         * {
-          font-family: 'Ribeye', cursive !important;
+          font-family: 'Aubrey', cursive !important;
         }
       `}</style>
       {children}
