@@ -1,12 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-interface WaterVisualizationProps {
-  progress: number;
-  isRunning: boolean;
-}
-
-export default function WaterVisualization({ progress, isRunning }: WaterVisualizationProps) {
+export default function WaterVisualization({ progress, isRunning }) {
   const waterHeight = progress * 100;
   
   // Generate bubbles inside water
@@ -35,7 +30,7 @@ export default function WaterVisualization({ progress, isRunning }: WaterVisuali
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {/* Falling water droplets from top to bottom */}
-      {isRunning && fallingDroplets.map((droplet: any) => (
+      {isRunning && fallingDroplets.map((droplet) => (
         <motion.div
           key={droplet.id}
           className="absolute rounded-full bg-indigo-400/70 dark:bg-indigo-500/70"
@@ -138,7 +133,7 @@ export default function WaterVisualization({ progress, isRunning }: WaterVisuali
         </div>
         
         {/* Bubbles rising inside water */}
-        {isRunning && bubbles.map((bubble: any) => (
+        {isRunning && bubbles.map((bubble) => (
           <motion.div
             key={bubble.id}
             className="absolute rounded-full bg-white/30 backdrop-blur-sm"

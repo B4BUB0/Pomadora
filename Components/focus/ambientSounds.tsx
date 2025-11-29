@@ -1,137 +1,208 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, VolumeX, Waves, TreePine, Cloud, Coffee } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
+import { Focus, Minimize2, Maximize2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const sounds = [
-  { 
-    id: 'rain', 
-    icon: Cloud, 
-    label: 'Rain',
-    url: 'https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3'
-  },
-  { 
-    id: 'waves', 
-    icon: Waves, 
-    label: 'Ocean',
-    url: 'https://assets.mixkit.co/active_storage/sfx/2432/2432-preview.mp3'
-  },
-  { 
-    id: 'forest', 
-    icon: TreePine, 
-    label: 'Forest',
-    url: 'https://assets.mixkit.co/active_storage/sfx/2430/2430-preview.mp3'
-  },
-  { 
-    id: 'cafe', 
-    icon: Coffee, 
-    label: 'Café',
-    url: 'https://assets.mixkit.co/active_storage/sfx/2433/2433-preview.mp3'
-  },
-];
+import FocusTimer from '@/components/focus/FocusTimer';
+import TaskList from '@/components/focus/TaskList';
+import QuoteBlock from '@/components/focus/QuoteBlock';
+import FocusStats from '@/components/focus/FocusStats';
+import AmbientSounds from '@/components/focus/AmbientSounds';
+import ThemeToggle from '@/components/focus/ThemeToggle';
+import WaterVisualization from '@/components/focus/WaterVisualization';
+import SandVisualization from '@/components/focus/SandVisualization';
 
-export default function AmbientSounds({ focusMode }) {
-  const [activeSound, setActiveSound] = useState(null);
-  const [volume, setVolume] = useState(50);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const audioRef = useRef(null);
+export default function Home() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [visualization, setVisualization] = useState('water');
+  const [tasks, setTasks] = useState([]);
+  const [timerState, setTimerState] = useState({ progress: 0, isRunning: false });
+  const [sessions, setSessions] = useState([]);
   
+  // Load sessions from localStorage on mount
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100;
+    const savedSessions = localStorage.getItem('focusSessions');
+    if (savedSessions) {
+      setSessions(JSON.parse(savedSessions));
     }
-  }, [volume]);
+  }, []);
   
+  // Apply dark mode
   useEffect(() => {
-    if (activeSound) {
-      const sound = sounds.find(s => s.id === activeSound);
-      if (sound && audioRef.current) {
-        audioRef.current.src = sound.url;
-        audioRef.current.loop = true;
-        audioRef.current.volume = volume / 100;
-        audioRef.current.play().catch(() => {});
-      }
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  }, [activeSound]);
+  }, [darkMode]);
   
-  const toggleSound = (soundId) => {
-    setActiveSound(activeSound === soundId ? null : soundId);
-  };
-  
-  if (focusMode && !activeSound) return null;
+  const handleSessionComplete = useCallback((duration) => {
+    const completedTasks = tasks.filter(t => t.completed).length;
+    const newSession = {
+      id: Date.now(),
+      duration_minutes: duration,
+      completed_at: new Date().toISOString(),
+      tasks_completed: completedTasks,
+      visualization_type: visualization,
+    };
+    
+    const updatedSessions = [newSession, ...sessions];
+    setSessions(updatedSessions);
+    localStorage.setItem('focusSessions', JSON.stringify(updatedSessions));
+    
+    // Play completion sound or show notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Focus Session Complete!', {
+        body: `Great job! You focused for ${duration} minutes.`,
+      });
+    }
+  }, [tasks, visualization, sessions]);
   
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed bottom-6 right-6 z-50"
-    >
-      <audio ref={audioRef} />
+    <div className={`min-h-screen transition-colors duration-500 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' 
+        : 'bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100'
+    }`}>
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className={`absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-3xl ${
+          darkMode ? 'bg-indigo-900/20' : 'bg-indigo-200/40'
+        }`} />
+        <div className={`absolute bottom-1/4 -right-32 w-96 h-96 rounded-full blur-3xl ${
+          darkMode ? 'bg-violet-900/20' : 'bg-violet-200/30'
+        }`} />
+      </div>
       
-      <AnimatePresence>
-        {isExpanded && !focusMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-16 right-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg rounded-2xl p-4 shadow-xl border border-slate-200 dark:border-slate-700 w-64"
-          >
-            <p className="text-xs uppercase tracking-widest text-slate-400 mb-3">
-              Ambient Sounds
-            </p>
-            
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {sounds.map((sound) => (
-                <button
-                  key={sound.id}
-                  onClick={() => toggleSound(sound.id)}
-                  className={`p-3 rounded-xl transition-all ${
-                    activeSound === sound.id
-                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  <sound.icon className="w-5 h-5 mx-auto" />
-                </button>
-              ))}
-            </div>
-            
-            {activeSound && (
-              <div className="flex items-center gap-3">
-                <VolumeX className="w-4 h-4 text-slate-400" />
-                <Slider
-                  value={volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  max={100}
-                  step={1}
-                  className="flex-1"
-                />
-                <Volume2 className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-          </motion.div>
+      {/* Fullscreen visualization */}
+      <AnimatePresence mode="wait">
+        {visualization === 'water' ? (
+          <WaterVisualization 
+            key="water"
+            progress={timerState.progress} 
+            isRunning={timerState.isRunning} 
+          />
+        ) : (
+          <SandVisualization 
+            key="sand"
+            progress={timerState.progress} 
+            isRunning={timerState.isRunning} 
+          />
         )}
       </AnimatePresence>
       
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-          activeSound
-            ? 'bg-indigo-500 text-white'
-            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-        }`}
-      >
-        {activeSound ? (
-          <Volume2 className="w-5 h-5" />
-        ) : (
-          <VolumeX className="w-5 h-5" />
-        )}
-      </motion.button>
-    </motion.div>
+      <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
+      <AmbientSounds focusMode={focusMode} />
+      
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Hero Section */}
+        <AnimatePresence>
+          {!focusMode && (
+            <motion.header
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center pt-12 pb-8 px-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm mb-6"
+              >
+                <Focus className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Mindful Productivity
+                </span>
+              </motion.div>
+              
+              <h1 className="text-4xl md:text-6xl font-extralight text-slate-800 dark:text-slate-100 mb-4 tracking-tight">
+                Focus on What{' '}
+                <span className="font-normal bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">
+                  Matters
+                </span>
+              </h1>
+              
+              <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto font-light">
+                A distraction-free space to help you concentrate on your most important work
+              </p>
+            </motion.header>
+          )}
+        </AnimatePresence>
+        
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
+          <div className={`w-full max-w-4xl mx-auto space-y-12 ${focusMode ? 'space-y-8' : ''}`}>
+            
+            {/* Focus Mode Toggle */}
+            <div className="flex justify-center">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={() => setFocusMode(!focusMode)}
+                  variant="outline"
+                  className={`gap-2 rounded-full px-6 border-slate-200 dark:border-slate-700 ${
+                    focusMode 
+                      ? 'bg-indigo-500 text-white border-indigo-500 hover:bg-indigo-600' 
+                      : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm'
+                  }`}
+                >
+                  {focusMode ? (
+                    <>
+                      <Maximize2 className="w-4 h-4" />
+                      Exit Focus Mode
+                    </>
+                  ) : (
+                    <>
+                      <Minimize2 className="w-4 h-4" />
+                      Enter Focus Mode
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            </div>
+            
+            {/* Timer */}
+            <FocusTimer
+              onSessionComplete={handleSessionComplete}
+              focusMode={focusMode}
+              visualization={visualization}
+              setVisualization={setVisualization}
+              setTimerState={setTimerState}
+            />
+            
+            {/* Tasks */}
+            <TaskList
+              tasks={tasks}
+              setTasks={setTasks}
+              focusMode={focusMode}
+            />
+            
+            {/* Quote */}
+            <QuoteBlock focusMode={focusMode} />
+            
+            {/* Stats */}
+            <FocusStats sessions={sessions} focusMode={focusMode} />
+          </div>
+        </main>
+        
+        {/* Footer */}
+        <AnimatePresence>
+          {!focusMode && (
+            <motion.footer
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm"
+            >
+              <p>Built for deep work and mindful productivity</p>
+              <p className="mt-2 text-xs">
+                Developed by <span className="font-medium text-indigo-500 dark:text-indigo-400">Baiysh</span>
+              </p>
+            </motion.footer>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
