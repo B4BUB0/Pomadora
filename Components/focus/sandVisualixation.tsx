@@ -1,13 +1,8 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-interface SandVisualizationProps {
-  progress: number;
-  isRunning: boolean;
-}
-
-export default function SandVisualization({ progress, isRunning }: SandVisualizationProps) {
-  const sandHeight = progress * 100;
+export default function SandVisualization({ progress = 0, isRunning = false }: { progress?: number; isRunning?: boolean }) {
+  const sandHeight = (Number(progress) || 0) * 100;
   
   // Generate falling sand particles
   const fallingParticles = useMemo(() => 

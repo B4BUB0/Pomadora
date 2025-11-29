@@ -2,28 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Target, Flame, TrendingUp } from 'lucide-react';
 
-interface Session {
-  completed_at: string | Date;
-  duration_minutes?: number;
-  tasks_completed?: number;
-}
-
-interface FocusStatsProps {
-  sessions: Session[];
-  focusMode: boolean;
-}
-
-export default function FocusStats({ sessions, focusMode }: FocusStatsProps) {
+export default function FocusStats({ sessions = [], focusMode = false }: { sessions?: any[]; focusMode?: boolean }) {
   if (focusMode) return null;
-  
-  const todaySessions = sessions.filter(s => {
-    const sessionDate = new Date(s.completed_at);
-    const today = new Date();
+
+  const today = new Date();
+  const todaySessions = sessions.filter((s: any) => {
+    const sessionDate = new Date(String(s?.completed_at));
     return sessionDate.toDateString() === today.toDateString();
   });
-  
-  const totalMinutesToday = todaySessions.reduce((acc, s) => acc + (s.duration_minutes || 0), 0);
-  const totalTasksToday = todaySessions.reduce((acc, s) => acc + (s.tasks_completed || 0), 0);
+
+  const totalMinutesToday = todaySessions.reduce((acc: number, s: any) => acc + (Number(s?.duration_minutes) || 0), 0);
+  const totalTasksToday = todaySessions.reduce((acc: number, s: any) => acc + (Number(s?.tasks_completed) || 0), 0);
   const streak = calculateStreak(sessions);
   
   const stats = [
@@ -82,23 +71,22 @@ export default function FocusStats({ sessions, focusMode }: FocusStatsProps) {
   );
 }
 
-function calculateStreak(sessions: Session[]): number {
-  if (sessions.length === 0) return 0;
-  
-  const dates = [...new Set(sessions.map(s => 
-    new Date(s.completed_at).toDateString()
-  ))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-  
+function calculateStreak(sessions: any[] = []): number {
+  if (!sessions || sessions.length === 0) return 0;
+
+  const uniqueDates = [...new Set(sessions.map((s: any) => new Date(String(s?.completed_at)).toDateString()))];
+  const dates = uniqueDates.sort((a, b) => new Date(String(b)).getTime() - new Date(String(a)).getTime());
+
   let streak = 0;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
-  
+
   for (const dateStr of dates) {
-    const date = new Date(dateStr);
+    const date = new Date(String(dateStr));
     date.setHours(0, 0, 0, 0);
-    
+
     const diffDays = Math.floor((currentDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays <= 1) {
       streak++;
       currentDate = date;
@@ -106,6 +94,6 @@ function calculateStreak(sessions: Session[]): number {
       break;
     }
   }
-  
+
   return streak;
 }

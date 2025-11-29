@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-export default function WaterVisualization({ progress, isRunning }) {
-  const waterHeight = progress * 100;
+export default function WaterVisualization({ progress = 0, isRunning = false }: { progress?: number; isRunning?: boolean }) {
+  const waterHeight = (Number(progress) || 0) * 100;
   
   // Generate bubbles inside water
   const bubbles = useMemo(() => 
